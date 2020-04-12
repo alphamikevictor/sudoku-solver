@@ -5,3 +5,4 @@ Just to practice and try to implement some easy methods before going to backtrac
 
 Methods implemented
 * Naked single strategy: mark a single solution fixed, some times this leads after to mark some others as fixed
+* Hidden single strategy: mark a solution when some numbre is only possible in one position in his row or in one position in his column

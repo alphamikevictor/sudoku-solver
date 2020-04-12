@@ -90,6 +90,7 @@ def sudoku_solver(sudoku, filled, sudoku_drawer, screen, greens = []):
     if not greens:
         do_it_again = True
         while do_it_again:
+            # Looking for naked single
             possibilities  = list( list( possible_solutions(x,y) if sudoku[x][y] == 0 else set() for y in range(9)) for x in range(9))
             greenies = []
             for x in range(9):
@@ -97,6 +98,25 @@ def sudoku_solver(sudoku, filled, sudoku_drawer, screen, greens = []):
                     if len(possibilities[x][y]) == 1:
                         greenies.append((x,y))
                         sudoku[x][y] = possibilities[x][y].pop()
+            # End looking for naked single
+            # Looking for Hidden single
+            # Horizontal
+            # Need to reresh possibilities if some number was fixed
+            possibilities  = list( list( possible_solutions(x,y) if sudoku[x][y] == 0 else set() for y in range(9)) for x in range(9))
+            for x in range(9):
+                for possible_hidden in range(1,10):
+                    positions = [ (x,y) for y in range(9) if possible_hidden in possibilities[x][y]]
+                    if len(positions) == 1:
+                        sudoku[positions[0][0]][positions[0][1]] = possible_hidden
+                        greenies.append((positions[0][0],positions[0][1]))
+            # Vertical
+            for y in range(9):
+                for possible_hidden in range(1,10):
+                    positions = [ (x,y) for x in range(9) if possible_hidden in possibilities[x][y]]
+                    if len(positions) == 1:
+                        sudoku[positions[0][0]][positions[0][1]] = possible_hidden
+                        greenies.append((positions[0][0],positions[0][1]))
+            # End looking for Hidden single
             if greenies:
                 greens.extend(greenies)
                 sudoku_drawer.draw(sudoku, filled, screen, greens)
@@ -135,7 +155,7 @@ pygame.init()
 # ]
 
 SUDOKU = [
-    [0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 2],
     [7, 1, 0, 9, 0, 0, 6, 0, 3],
     [9, 0, 4, 0, 0, 2, 0, 0, 7],
     [4, 0, 0, 0, 6, 7, 0, 0, 0],
