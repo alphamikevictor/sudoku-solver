@@ -7,13 +7,14 @@ class Color():
     BLACK = 0, 0, 0
     WHITE = 255, 255, 255
     RED = 255, 0, 0
+    GREEN  = 0, 255, 0
 
 class SudokuDrawer():
 
     def __init__(self):
         self._drawn = False
 
-    def draw(self, table, filled, screen):
+    def draw(self, table, filled, screen, greens):
         if not self._drawn:
             screen.fill(Color.WHITE)
             for line in self._lines():
@@ -25,11 +26,15 @@ class SudokuDrawer():
                 color = Color.RED
                 if (x,y) in filled:
                     color = Color.BLACK
+                if (x,y) in greens:
+                    color = Color.GREEN
                 text_to_render = str(table[x][y]).replace("0", "  ")
                 text = font.render(text_to_render, True, color)
                 textRect = text.get_rect()
                 textRect.center = (y*600//9) + (600//18) +2, (x*600//9)+(600//18)+2
                 if color == Color.BLACK and not self._drawn:
+                    screen.blit(text, textRect)
+                if color == Color.GREEN:
                     screen.blit(text, textRect)
                 if color == Color.RED:
                     pygame.draw.rect(screen, Color.WHITE, textRect)
@@ -67,27 +72,48 @@ class SudokuDrawer():
     def _little_squares_vertical(self):
         return [pygame.Rect(i*600//9,0,1,600) for i in range(1,9) if i%3!=0]
 
-def sudoku_solver(sudoku, filled, sudoku_drawer, screen):
+
+def sudoku_solver(sudoku, filled, sudoku_drawer, screen, greens = []):
+    def possible_solutions(pos_x, pos_y):
+        possibilities = set(x for x in range(1,10))
+        possibilities = possibilities.difference(set(sudoku[pos_x][y] for y in range(9)))
+        possibilities = possibilities.difference(set(sudoku[x][pos_y] for x in range(9)))
+        current_square_top_left = (pos_x-pos_x%3, pos_y-pos_y%3)
+        possibilities = possibilities.difference(
+                            set(sudoku[x][y]
+                                    for x in range(current_square_top_left[0],current_square_top_left[0]+3)
+                                    for y in range(current_square_top_left[1],current_square_top_left[1]+3)
+                            )
+                            )
+        return possibilities
+
+    if not greens:
+        do_it_again = True
+        while do_it_again:
+            possibilities  = list( list( possible_solutions(x,y) if sudoku[x][y] == 0 else set() for y in range(9)) for x in range(9))
+            greenies = []
+            for x in range(9):
+                for y in range(9):
+                    if len(possibilities[x][y]) == 1:
+                        greenies.append((x,y))
+                        sudoku[x][y] = possibilities[x][y].pop()
+            if greenies:
+                greens.extend(greenies)
+                sudoku_drawer.draw(sudoku, filled, screen, greens)
+                time.sleep(0.1)
+            else:
+                do_it_again = False
+
     time.sleep(0.1)
     freepositions = ( (x,y) for x in range(9) for y in range(9) if sudoku[x][y] == 0)
     try:
         (pos_x, pos_y) = freepositions.__next__()
     except StopIteration:
         return True
-    possible_solutions = set(x for x in range(1,10))
-    possible_solutions = possible_solutions.difference(set(sudoku[pos_x][y] for y in range(9)))
-    possible_solutions = possible_solutions.difference(set(sudoku[x][pos_y] for x in range(9)))
-    current_square_top_left = (pos_x-pos_x%3, pos_y-pos_y%3)
-    possible_solutions = possible_solutions.difference(
-                                set(sudoku[x][y]
-                                        for x in range(current_square_top_left[0],current_square_top_left[0]+3)
-                                        for y in range(current_square_top_left[1],current_square_top_left[1]+3)
-                                )
-                                )
-    for number in possible_solutions:
+    for number in possible_solutions(pos_x, pos_y):
         sudoku[pos_x][pos_y] = number
-        sudoku_drawer.draw(sudoku, filled, screen)
-        if sudoku_solver(sudoku, filled, sudoku_drawer, screen):
+        sudoku_drawer.draw(sudoku, filled, screen, greens)
+        if sudoku_solver(sudoku, filled, sudoku_drawer, screen, greens):
             return True
     sudoku[pos_x][pos_y]=0
     return False
@@ -128,7 +154,7 @@ screen = pygame.display.set_mode(size)
 pygame.display.set_caption("Sudoku")
 
 sudoku_drawer = SudokuDrawer()
-sudoku_drawer.draw(SUDOKU, filled, screen)
+sudoku_drawer.draw(SUDOKU, filled, screen, [])
 sudoku_solver(SUDOKU, filled, sudoku_drawer, screen)
 
 run = True
