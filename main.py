@@ -123,6 +123,8 @@ def sudoku_solver(sudoku, filled, sudoku_drawer, screen, greens = []):
                 time.sleep(0.1)
             else:
                 do_it_again = False
+        # Add a sort of fake green to avoid its creation in further iteration
+        greens.append((-1, -1))
 
     time.sleep(0.1)
     freepositions = ( (x,y) for x in range(9) for y in range(9) if sudoku[x][y] == 0)
